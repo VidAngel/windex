@@ -1,0 +1,4 @@
+#!/usr/bin/bash
+MIN=${1:-$(cut -f1 < /proc/sys/net/ipv4/ip_local_port_range)}
+MAX=${2:-$(cut -f2 < /proc/sys/net/ipv4/ip_local_port_range)}
+comm -23 <(seq $MIN $MAX | sort) <(ss -Htan | awk '{print $4}' | cut -d':' -f2 | sort -u) | shuf | head -n1
