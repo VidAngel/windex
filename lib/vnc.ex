@@ -8,24 +8,34 @@ defmodule Windex.VNC do
     port      = Keyword.get(opts, :port, available_port())
     program   = Keyword.get(opts, :run)
     args      = Keyword.get(opts, :args, [])
-    xserver   = Keyword.get(opts, :xserver)
+    xserver   = Keyword.get(opts, :display)
     viewonly? = Keyword.get(opts, :viewonly, false)
 
     linked_procs = []
 
-    if not xserver do
-      {:ok, {xserver, proc}} = spawn_xserver!
-      linked_procs = linked_procs ++ [proc]
-    end
+    {:ok, display} = spawn_xserver!(xserver)
+    pid = spawn_program!(program, args, display)
+    {:ok, password} = spawn_vnc!(display, port)
 
-    if program do
-      {:ok, proc} = spawn_program!(program, xserver, args)
-      linked_procs = linked_procs ++ [proc]
-    end
+    {:ok, nil}
+  end
 
-    {:ok, {password, proc}} = spawn_vnc!(xserver, port)
-    linked_procs = linked_procs ++ [proc]
-    {:ok, {password, linked_procs}}
+  defp spawn_program!(nil, _, _), do: {:ok, nil}
+
+  defp spawn_program!(:observer, _, display) do
+    spawn_link(fn -> MuonTrap.cmd("xterm", [], env: [{"DISPLAY", display}]) end)
+  end
+
+  defp spawn_program!(program, args, display) do
+    spawn_link(fn -> MuonTrap.cmd(program, args, env: [{"DISPLAY", display}]) end)
+  end
+
+  # assume it's an already running xserver
+  def spawn_xserver!(xserver) when is_bitstring(xserver), do: {:ok, xserver}
+  def spawn_xserver!(nil) do
+    spawn(fn ->
+      MuonTrap.cmd("Xvfb", ["-displayfd", "1"], into: IO.stream(:stdio, :line))
+    end)
   end
 
   def start_link(opts) when is_list(opts) do
@@ -36,18 +46,17 @@ defmodule Windex.VNC do
     {:reply, password, {nil, linked_procs}}
   end
 
+  def handle_info(x, s) do
+    IO.inspect x
+    {:noreply, s}
+  end
+
   def handle_info({:DOWN, _ref, :port, _object, _reason}, {_, linked_procs}) do
     linked_procs |> Enum.map(&Port.close/1)
     {:stop, :normal}
   end
 
-  defp spawn_program!(path, display, args) do
-    {:ok, port} = Port.open({:spawn_executable, path}, [env: [DISPLAY: display], args: args])
-    Port.monitor(port)
-  end
-
-  defp spawn_xserver!, do: nil
-  defp spawn_vnc!(display, port), do: nil
+  defp spawn_vnc!(display, port), do: {:ok, nil}
 
   defp port_range, do: (start_port()..end_port())
 
