@@ -11,52 +11,71 @@ defmodule Windex.VNC do
     xserver   = Keyword.get(opts, :display)
     viewonly? = Keyword.get(opts, :viewonly, false)
 
-    linked_procs = []
-
     {:ok, display} = spawn_xserver!(xserver)
-    pid = spawn_program!(program, args, display)
-    {:ok, password} = spawn_vnc!(display, port)
+    {:ok, _pid, _ospid} = spawn_program!(program, args, display)
+    {:ok, password} = spawn_vnc!(display, port, viewonly?)
 
-    {:ok, nil}
+    {:ok, {password, port}}
   end
 
   defp spawn_program!(nil, _, _), do: {:ok, nil}
 
   defp spawn_program!(:observer, _, display) do
-    spawn_link(fn -> MuonTrap.cmd("xterm", [], env: [{"DISPLAY", display}]) end)
+    :exec.run_link("xterm", args: [], env: [{"DISPLAY", display}], stdout: self(), stderr: self())
   end
 
   defp spawn_program!(program, args, display) do
-    spawn_link(fn -> MuonTrap.cmd(program, args, env: [{"DISPLAY", display}]) end)
+    :exec.run_link("#{program} #{Enum.join(args, " ")}" |> String.to_charlist, env: [{"DISPLAY", display}], stdout: self(), stderr: self())
   end
 
   # assume it's an already running xserver
   def spawn_xserver!(xserver) when is_bitstring(xserver), do: {:ok, xserver}
   def spawn_xserver!(nil) do
-    spawn(fn ->
-      MuonTrap.cmd("Xvfb", ["-displayfd", "1"], into: IO.stream(:stdio, :line))
-    end)
+    # TODO: random display
+    {:ok, _pid, _ospid} = :exec.run_link("Xvfb -displayfd 1", stdout: self(), stderr: self())
   end
 
   def start_link(opts) when is_list(opts) do
     GenServer.start_link(__MODULE__, opts)
   end
 
-  def handle_call(:get_password, {password, linked_procs}) do
-    {:reply, password, {nil, linked_procs}}
+  @impl true
+  def handle_call(:get_password, _remote, {password, port}) do
+    {:reply, password, {nil, port}}
   end
 
-  def handle_info(x, s) do
-    IO.inspect x
-    {:noreply, s}
-  end
-
-  def handle_info({:DOWN, _ref, :port, _object, _reason}, {_, linked_procs}) do
-    linked_procs |> Enum.map(&Port.close/1)
+  @impl true
+  def handle_info({:DOWN, _ref, :port, _object, _reason}, _state) do
     {:stop, :normal}
   end
 
-  defp spawn_vnc!(display, port), do: {:ok, nil}
+  @impl true
+  def handle_info(x, state) do
+    IO.inspect x
+    {:noreply, state}
+  end
+
+  defp spawn_vnc!(display, port, viewonly) do
+    {tmpfile, 0} = System.cmd("mktemp", [])
+    tmpfile = tmpfile |> String.trim
+    password = password!()
+    :os.cmd("echo #{password} | vncpasswd > #{tmpfile}" |> String.to_charlist)
+    args = "-displayfd #{display} -rfbport #{port} -passwdfile #{tmpfile}"
+
+    case viewonly do
+      true ->
+        password = password!()
+        {:ok, _, _} = :exec.run_link("x11vnc #{args} -viewpasswd #{password}" |> String.to_charlist, [])
+        {:ok, password}
+      false ->
+        {:ok, _, _} = :exec.run_link("x11vnc #{args}" |> String.to_charlist, [])
+        {:ok, password}
+    end
+  end
+
+  defp password! do
+    :crypto.strong_rand_bytes(64) |> Base.encode16(case: :lower)
+  end
 
   defp port_range, do: (start_port()..end_port())
 
