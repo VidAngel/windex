@@ -1,6 +1,8 @@
 defmodule Windex.VNC do
   alias Application, as: App
   require GenServer
+  require Logger
+
   @behaviour GenServer
 
   @impl true
@@ -11,11 +13,17 @@ defmodule Windex.VNC do
     xserver   = Keyword.get(opts, :display)
     viewonly? = Keyword.get(opts, :viewonly, false)
 
-    {:ok, display} = spawn_xserver!(xserver)
-    {:ok, _pid, _ospid} = spawn_program!(program, args, display)
-    {:ok, password} = spawn_vnc!(display, port, viewonly?)
-
-    {:ok, {password, port}}
+    {:ok, _pid, _ospid} = spawn_xserver!(xserver)
+    receive do
+      {:stdout, _, x}  ->
+        display = ":" <> String.trim(x)
+        Logger.debug("Display -> #{display}")
+        {:ok, _pid, _ospid} = spawn_program!(program, args, display)
+        {:ok, password} = spawn_vnc!(display, port, viewonly?)
+        {:ok, {password, port}}
+    after
+      5_000 -> {:stop, "X server didn't seem to start correctly."}
+    end
   end
 
   defp spawn_program!(nil, _, _), do: {:ok, nil}
@@ -29,10 +37,9 @@ defmodule Windex.VNC do
   end
 
   # assume it's an already running xserver
-  def spawn_xserver!(xserver) when is_bitstring(xserver), do: {:ok, xserver}
+  def spawn_xserver!(xserver) when is_bitstring(xserver), do: {:ok, send(self(), {:stdout, nil, xserver})}
   def spawn_xserver!(nil) do
-    # TODO: random display
-    {:ok, _pid, _ospid} = :exec.run_link("Xvfb -displayfd 1", stdout: self(), stderr: self())
+    :exec.run_link("Xvfb -displayfd 1", stdout: self(), stderr: self())
   end
 
   def start_link(opts) when is_list(opts) do
@@ -45,13 +52,22 @@ defmodule Windex.VNC do
   end
 
   @impl true
+  def handle_call(:get_port, _remote, {password, port}) do
+    {:reply, port, {password, port}}
+  end
+
+  @impl true
   def handle_info({:DOWN, _ref, :port, _object, _reason}, _state) do
     {:stop, :normal}
   end
 
   @impl true
-  def handle_info(x, state) do
-    IO.inspect x
+  def handle_info({:stderr, _, _out}, state) do
+    {:noreply, state}
+  end
+
+  @impl true
+  def handle_info({:stdout, _, _out}, state) do
     {:noreply, state}
   end
 
@@ -59,22 +75,26 @@ defmodule Windex.VNC do
     {tmpfile, 0} = System.cmd("mktemp", [])
     tmpfile = tmpfile |> String.trim
     password = password!()
-    :os.cmd("echo #{password} | vncpasswd > #{tmpfile}" |> String.to_charlist)
-    args = "-displayfd #{display} -rfbport #{port} -passwdfile #{tmpfile}"
+    :os.cmd("echo -n #{password} | vncpasswd -f > #{tmpfile}" |> String.to_charlist)
+    args = "-display #{display} -rfbport #{port} -passwd #{password}" #-passwdfile #{tmpfile}"
 
     case viewonly do
       true ->
-        password = password!()
-        {:ok, _, _} = :exec.run_link("x11vnc #{args} -viewpasswd #{password}" |> String.to_charlist, [])
+        password = password()
+        cmd = "x11vnc #{args} -viewpasswd #{password}" |> String.to_charlist
+        Logger.debug cmd
+        {:ok, _, _} = :exec.run_link(cmd, stdout: self(), stderr: self())
         {:ok, password}
       false ->
-        {:ok, _, _} = :exec.run_link("x11vnc #{args}" |> String.to_charlist, [])
+        cmd = "x11vnc #{args}" |> String.to_charlist
+        Logger.debug cmd
+        {:ok, _, _} = :exec.run_link("x11vnc #{args}" |> String.to_charlist, stdout: self(), stderr: self())
         {:ok, password}
     end
   end
 
   defp password! do
-    :crypto.strong_rand_bytes(64) |> Base.encode16(case: :lower)
+    :crypto.strong_rand_bytes(32) |> Base.encode16(case: :lower) |> String.slice(0..7)
   end
 
   defp port_range, do: (start_port()..end_port())
