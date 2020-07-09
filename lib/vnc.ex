@@ -72,23 +72,24 @@ defmodule Windex.VNC do
   end
 
   defp spawn_vnc!(display, port, viewonly) do
-    {tmpfile, 0} = System.cmd("mktemp", [])
+    # the "rm:" prefix means x11vnc will delete the file after reading
+    # see -passwdfile flag documentation for x11vnc
+    # https://linux.die.net/man/1/x11vnc
+    {tmpfile, 0} = System.cmd("mktemp", ["windex.XXXXXXXXXX", "--tmpdir"])
     tmpfile = tmpfile |> String.trim
     password = password!()
-    :os.cmd("echo -n #{password} | vncpasswd -f > #{tmpfile}" |> String.to_charlist)
-    args = "-display #{display} -rfbport #{port} -passwd #{password}" #-passwdfile #{tmpfile}"
+    File.write!(tmpfile, "#{password}\n")
+    cmd = "x11vnc -norc -display #{display} -rfbport #{port} -passwdfile rm:#{tmpfile}" |> String.to_charlist
+    Logger.debug cmd
 
     case viewonly do
       true ->
-        password = password()
-        cmd = "x11vnc #{args} -viewpasswd #{password}" |> String.to_charlist
-        Logger.debug cmd
+        password = password!()
+        File.write!(tmpfile, "__BEGIN_VIEWONLY__\n#{password}\n", [:append])
         {:ok, _, _} = :exec.run_link(cmd, stdout: self(), stderr: self())
         {:ok, password}
       false ->
-        cmd = "x11vnc #{args}" |> String.to_charlist
-        Logger.debug cmd
-        {:ok, _, _} = :exec.run_link("x11vnc #{args}" |> String.to_charlist, stdout: self(), stderr: self())
+        {:ok, _, _} = :exec.run_link(cmd, stdout: self(), stderr: self())
         {:ok, password}
     end
   end
