@@ -12,6 +12,7 @@ defmodule Windex.VNC do
     args      = Keyword.get(opts, :args, [])
     xserver   = Keyword.get(opts, :display)
     viewonly? = Keyword.get(opts, :viewonly, false)
+    password  = password(Keyword.get(opts, :password))
 
     Logger.debug("PID -> #{inspect self()}")
 
@@ -21,7 +22,7 @@ defmodule Windex.VNC do
         display = ":" <> String.trim(x)
         Logger.debug("Display -> #{display}")
         spawn_program!(program, args, display)
-        password = spawn_vnc!(display, port, viewonly?)
+        password = spawn_vnc!(display, port, viewonly?, password)
         {:ok, {password, port}}
     after
       5_000 -> {:stop, "X server didn't seem to start correctly."}
@@ -82,20 +83,18 @@ defmodule Windex.VNC do
     {:noreply, state}
   end
 
-  defp spawn_vnc!(display, port, viewonly) do
+  defp spawn_vnc!(display, port, viewonly?, password) do
     # the "rm:" prefix means x11vnc will delete the file after reading
     # see -passwdfile flag documentation for x11vnc
     # https://linux.die.net/man/1/x11vnc
     {tmpfile, 0} = System.cmd("mktemp", ["windex.XXXXXXXXXX", "--tmpdir"])
     tmpfile = tmpfile |> String.trim
-    password = password!()
-    File.write!(tmpfile, "#{password}\n")
+    File.write!(tmpfile, "#{viewonly? and password() or password}\n")
     cmd = "x11vnc -norc -display #{display} -rfbport #{port} -passwdfile rm:#{tmpfile}" |> String.to_charlist
     Logger.debug cmd
 
-    case viewonly do
+    case viewonly?  do
       true ->
-        password = password!()
         File.write!(tmpfile, "__BEGIN_VIEWONLY__\n#{password}\n", [:append])
         {:ok, pid, _} = :exec.run_link(cmd, [{:stdout, self()}, {:stderr, self()}, :monitor])
         Process.monitor(pid)
@@ -107,7 +106,11 @@ defmodule Windex.VNC do
     end
   end
 
-  defp password! do
+  defp password(x) when is_binary(x), do: String.slice(x, 0..7)
+  defp password(x) when is_list(x),   do: x |> List.to_string |> password
+  defp password(_), do: password()
+
+  defp password() do
     :crypto.strong_rand_bytes(32) |> Base.encode16(case: :lower) |> String.slice(0..7)
   end
 

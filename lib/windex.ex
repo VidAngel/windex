@@ -10,6 +10,6 @@ defmodule Windex do
   end
 
   def spawn_server do
-  end
 
+  end
 end
