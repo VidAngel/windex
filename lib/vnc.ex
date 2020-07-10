@@ -13,13 +13,15 @@ defmodule Windex.VNC do
     xserver   = Keyword.get(opts, :display)
     viewonly? = Keyword.get(opts, :viewonly, false)
 
-    {:ok, _pid, _ospid} = spawn_xserver!(xserver)
+    Logger.debug("PID -> #{inspect self()}")
+
+    spawn_xserver!(xserver)
     receive do
       {:stdout, _, x}  ->
         display = ":" <> String.trim(x)
         Logger.debug("Display -> #{display}")
-        {:ok, _pid, _ospid} = spawn_program!(program, args, display)
-        {:ok, password} = spawn_vnc!(display, port, viewonly?)
+        spawn_program!(program, args, display)
+        password = spawn_vnc!(display, port, viewonly?)
         {:ok, {password, port}}
     after
       5_000 -> {:stop, "X server didn't seem to start correctly."}
@@ -29,17 +31,20 @@ defmodule Windex.VNC do
   defp spawn_program!(nil, _, _), do: {:ok, nil}
 
   defp spawn_program!(:observer, _, display) do
-    :exec.run_link("xterm", args: [], env: [{"DISPLAY", display}], stdout: self(), stderr: self())
+    {:ok, pid, _} = :exec.run_link("xterm", [{:env, [{"DISPLAY", display}]}, {:stdout, self()}, {:stderr, self()}, :monitor])
+    Process.monitor(pid)
   end
 
   defp spawn_program!(program, args, display) do
-    :exec.run_link("#{program} #{Enum.join(args, " ")}" |> String.to_charlist, env: [{"DISPLAY", display}], stdout: self(), stderr: self())
+    {:ok, pid, _} = :exec.run_link("#{program} #{Enum.join(args, " ")}" |> String.to_charlist, [{:env, [{"DISPLAY", display}]}, {:stdout, self()}, {:stderr, self()}, :monitor])
+    Process.monitor(pid)
   end
 
   # assume it's an already running xserver
-  def spawn_xserver!(xserver) when is_bitstring(xserver), do: {:ok, send(self(), {:stdout, nil, xserver})}
-  def spawn_xserver!(nil) do
-    :exec.run_link("Xvfb -displayfd 1", stdout: self(), stderr: self())
+  defp spawn_xserver!(xserver) when is_bitstring(xserver), do: {:ok, send(self(), {:stdout, nil, xserver})}
+  defp spawn_xserver!(nil) do
+    {:ok, pid, _} = :exec.run_link("Xvfb -displayfd 1", [{:stdout, self()}, {:stderr, self()}, :monitor])
+    Process.monitor(pid)
   end
 
   def start_link(opts) when is_list(opts) do
@@ -57,8 +62,9 @@ defmodule Windex.VNC do
   end
 
   @impl true
-  def handle_info({:DOWN, _ref, :port, _object, _reason}, _state) do
-    {:stop, :normal}
+  def handle_info({:DOWN, _ref, :process, _pid, _reason}, state) do
+    Logger.debug "Closing Windex instance"
+    {:stop, :normal, state}
   end
 
   @impl true
@@ -68,6 +74,11 @@ defmodule Windex.VNC do
 
   @impl true
   def handle_info({:stdout, _, _out}, state) do
+    {:noreply, state}
+  end
+
+  def handle_info(what, state) do
+    Logger.debug(inspect what)
     {:noreply, state}
   end
 
@@ -86,11 +97,13 @@ defmodule Windex.VNC do
       true ->
         password = password!()
         File.write!(tmpfile, "__BEGIN_VIEWONLY__\n#{password}\n", [:append])
-        {:ok, _, _} = :exec.run_link(cmd, stdout: self(), stderr: self())
-        {:ok, password}
+        {:ok, pid, _} = :exec.run_link(cmd, [{:stdout, self()}, {:stderr, self()}, :monitor])
+        Process.monitor(pid)
+        password
       false ->
-        {:ok, _, _} = :exec.run_link(cmd, stdout: self(), stderr: self())
-        {:ok, password}
+        {:ok, pid, _} = :exec.run_link(cmd, [{:stdout, self()}, {:stderr, self()}, :link])
+        Process.monitor(pid)
+        password
     end
   end
 
