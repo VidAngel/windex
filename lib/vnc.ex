@@ -21,12 +21,22 @@ defmodule Windex.VNC do
       {:stdout, _, x}  ->
         display = ":" <> String.trim(x)
         Logger.debug("Display -> #{display}")
+        decorate!(display, !!xserver)
         spawn_program!(program, args, display)
         password = spawn_vnc!(display, port, viewonly?, password)
         {:ok, {password, port}}
     after
       5_000 -> {:stop, "X server didn't seem to start correctly."}
     end
+  end
+
+  defp decorate!(_preexisting_server, true), do: nil
+  defp decorate!(xserver, _) do
+    spawn(fn ->
+      Process.sleep(1000)
+      System.cmd("xsetroot", ["-solid", "#34434b", "-display", xserver])
+      System.cmd("twm", ["-f", "#{:code.priv_dir(:windex)}/twm.rc", "-display", xserver])
+    end)
   end
 
   defp spawn_program!(nil, _, _), do: {:ok, nil}

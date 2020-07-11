@@ -1,0 +1,8 @@
+NoDefaults
+DefaultFunction f.nop
+Function "move-or-raise" { f.move f.deltastop f.raise }
+Function "move-or-lower" { f.move f.deltastop f.lower }
+Button1   = m  : window | icon     : f.raise
+Button1   =    : title        : f.function "move-or-raise"
+RightTitleButton ":resize" = f.fullzoom
+RightTitleButton ":delete" = f.delete
