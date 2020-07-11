@@ -42,14 +42,20 @@ defmodule Windex.VNC do
   defp spawn_program!(nil, _, _), do: {:ok, nil}
 
   defp spawn_program!(:observer, _, display) do
-    {:ok, pid, _} = :exec.run_link("xterm", [{:env, [{"DISPLAY", display}]}, {:stdout, self()}, {:stderr, self()}, :monitor])
+    cmd = "erl -name #{observer_name()}@127.0.0.1 -hidden -setcookie #{Node.get_cookie()} -run observer -noinput -env DISPLAY #{display}"
+    Logger.info "Starting erlang observer"
+    {:ok, pid, _} = :exec.run_link(cmd, [{:stdout, self()}, {:stderr, self()}, :monitor])
     Process.monitor(pid)
   end
 
   defp spawn_program!(program, args, display) do
-    {:ok, pid, _} = :exec.run_link("#{program} #{Enum.join(args, " ")}" |> String.to_charlist, [{:env, [{"DISPLAY", display}]}, {:stdout, self()}, {:stderr, self()}, :monitor])
+    cmd = "#{program} #{Enum.join(args, " ")}"
+    Logger.info "Launching #{cmd}"
+    {:ok, pid, _} = :exec.run_link(cmd, [{:env, [{"DISPLAY", display}]}, {:stdout, self()}, {:stderr, self()}, :monitor])
     Process.monitor(pid)
   end
+
+  defp observer_name(), do: "windex-#{password()}"
 
   # assume it's an already running xserver
   defp spawn_xserver!(xserver) when is_bitstring(xserver), do: {:ok, send(self(), {:stdout, nil, xserver})}
