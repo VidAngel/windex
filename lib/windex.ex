@@ -9,7 +9,7 @@ defmodule Windex do
     Supervisor.init([], strategy: :one_for_one)
   end
 
-  def spawn_server do
+  def spawn_server(opts \\ [run: :observer]) do
 
   end
 end

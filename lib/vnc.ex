@@ -5,6 +5,12 @@ defmodule Windex.VNC do
 
   @behaviour GenServer
 
+  require Record
+  Record.defrecord(:wx, Record.extract(:wx, from_lib: "wx/include/wx.hrl"))
+  Record.defrecord(:wxClose, Record.extract(:wxClose, from_lib: "wx/include/wx.hrl"))
+  Record.defrecord(:wxCommand, Record.extract(:wxCommand, from_lib: "wx/include/wx.hrl"))
+  Record.defrecord(:wx_env, Record.extract(:wx_env, from_lib: "wx/src/wxe.hrl"))
+
   @impl true
   def init(opts) when is_list(opts) do
     port      = Keyword.get(opts, :port, available_port())
@@ -42,6 +48,11 @@ defmodule Windex.VNC do
   defp spawn_program!(nil, _, _), do: {:ok, nil}
 
   defp spawn_program!(:observer, _, display) do
+    # event = wx(event: wxClose(type: 'close_session'))
+    # send(:observer, event)
+    # GenServer.cast(:observer, {:status_bar, "WELCOME TO WINDEX"})
+    # :wx.set_env({:wx, _, 
+    # :observer_wx.get_attrib(:opengl_port)
     cmd = "erl -name #{observer_name()}@127.0.0.1 -hidden -setcookie #{Node.get_cookie()} -run observer -noinput -env DISPLAY #{display}"
     Logger.info "Starting erlang observer"
     {:ok, pid, _} = :exec.run_link(cmd, [{:stdout, self()}, {:stderr, self()}, :monitor])
