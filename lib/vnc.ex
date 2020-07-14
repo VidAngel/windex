@@ -50,9 +50,13 @@ defmodule Windex.VNC do
   defp spawn_program!(:observer, _, display) do
     # event = wx(event: wxClose(type: 'close_session'))
     # send(:observer, event)
+    #
     # GenServer.cast(:observer, {:status_bar, "WELCOME TO WINDEX"})
-    # :wx.set_env({:wx, _, 
-    # :observer_wx.get_attrib(:opengl_port)
+    #
+    # env = wx_env(sv: Process.whereis(:observer), port: :observer_wx.get_attrib(:opengl_port))
+    # :wx.set_env(env)
+    # :wxMenuBar.findMenu(:observer_wx.get_menubar, "Nodes")
+    # TODO...
     cmd = "erl -name #{observer_name()}@127.0.0.1 -hidden -setcookie #{Node.get_cookie()} -run observer -noinput -env DISPLAY #{display}"
     Logger.info "Starting erlang observer"
     {:ok, pid, _} = :exec.run_link(cmd, [{:stdout, self()}, {:stderr, self()}, :monitor])
