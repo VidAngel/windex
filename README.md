@@ -4,7 +4,9 @@
 
 ## Installation
 
-Make sure you have the latest version of rebar (`mix local.rebar`)
+Make sure you have the latest version of rebar (`mix local.rebar`).
+
+It's recommended that xorg-twm is installed for window management.
 
 If [available in Hex](https://hex.pm/docs/publish), the package can be installed
 by adding `windex` to your list of dependencies in `mix.exs`:
