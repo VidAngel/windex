@@ -1,15 +1,6 @@
 defmodule Windex do
-  require DynamicSupervisor
-
-  def start_link(opts) do
-    DynamicSupervisor.start_link(__MODULE__, :ok, opts)
-  end
-
-  def init(:ok) do
-    Supervisor.init([], strategy: :one_for_one)
-  end
-
   def spawn_server(opts \\ [run: :observer]) do
-
+    {:ok, pid} = DynamicSupervisor.start_child(Windex.Sessions, {Windex.VNC, opts})
+    {GenServer.call(pid, :get_port), GenServer.call(pid, :get_password)}
   end
 end

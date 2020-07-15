@@ -1,11 +1,11 @@
 defmodule Windex.VNC do
+  use GenServer, restart: :transient
   alias Application, as: App
+
   require GenServer
   require Logger
-
-  @behaviour GenServer
-
   require Record
+
   Record.defrecord(:wx, Record.extract(:wx, from_lib: "wx/include/wx.hrl"))
   Record.defrecord(:wxClose, Record.extract(:wxClose, from_lib: "wx/include/wx.hrl"))
   Record.defrecord(:wxCommand, Record.extract(:wxCommand, from_lib: "wx/include/wx.hrl"))
