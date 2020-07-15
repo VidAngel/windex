@@ -4,6 +4,8 @@
 
 ## Installation
 
+Make sure you have the latest version of rebar (`mix local.rebar`)
+
 If [available in Hex](https://hex.pm/docs/publish), the package can be installed
 by adding `windex` to your list of dependencies in `mix.exs`:
 
