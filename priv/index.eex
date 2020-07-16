@@ -1,0 +1,8 @@
+<!doctype html>
+<title><%= Node.self() %> | WINDEX</title>
+<form method=POST>
+  <select name=command>
+    <%=Windex.available_opts |> Enum.with_index |> Enum.map(fn({opt, idx}) -> %>
+    <option value=<%=idx%>><%= opt[:run] %></option>
+    <% end) %>
+  <input type=submit>

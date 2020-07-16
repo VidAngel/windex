@@ -15,7 +15,7 @@ defmodule Windex.MixProject do
   def application do
     [
       mod: {Windex.Supervisor, []},
-      extra_applications: [:logger, :erlexec]
+      extra_applications: [:logger, :erlexec, :inets]
     ]
   end
 
