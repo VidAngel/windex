@@ -17,7 +17,10 @@ defmodule Windex.Observer do
       |> Enum.find(fn item -> IO.inspect(:wxMenuItem.getLabel(item)) |> List.to_atom == node end)
       |> :wxMenuItem.getId
     send(:observer, wx(id: label_id, event: wxCommand(type: :command_menu_selected)))
+    GenServer.cast(:observer, {:status_bar, "WELCOME TO WINDEX"})
+    loop()
   end
+  def loop, do: loop()
 end
 
 [node | _ ] = System.argv

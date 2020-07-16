@@ -42,13 +42,12 @@ defmodule Windex.VNC do
   defp spawn_program!(nil, _, _), do: {:ok, nil}
 
   defp spawn_program!(:observer, _, display) do
-    # TODO
     nodename = "#{observer_name()}@127.0.0.1"
-    cmd = "erl -name #{nodename} -hidden -setcookie #{Node.get_cookie()} -run observer -noinput -env DISPLAY #{display}"
+    observer_script = "#{:code.priv_dir(:windex)}/observer.exs"
+    cmd = "elixir --name #{nodename} --hidden --cookie #{Node.get_cookie()} --erl \"-noinput -env DISPLAY #{display}\" #{observer_script} #{Node.self()}"
     Logger.info "Starting erlang observer"
     {:ok, pid, _} = :exec.run_link(cmd, [{:stdout, self()}, {:stderr, self()}, :monitor])
     Process.monitor(pid)
-    Node.spawn(nodename |> String.to_atom, __MODULE__, :select_observer_node, [Node.self()])
   end
 
   defp spawn_program!(program, args, display) do
@@ -83,7 +82,7 @@ defmodule Windex.VNC do
 
   @impl true
   def handle_info({:DOWN, _ref, :process, _pid, _reason}, state) do
-    Logger.debug "Closing Windex instance"
+    Logger.info "Closing Windex instance"
     {:stop, :normal, state}
   end
 
