@@ -4,12 +4,6 @@ defmodule Windex.VNC do
 
   require GenServer
   require Logger
-  require Record
-
-  Record.defrecord(:wx, Record.extract(:wx, from_lib: "wx/include/wx.hrl"))
-  Record.defrecord(:wxClose, Record.extract(:wxClose, from_lib: "wx/include/wx.hrl"))
-  Record.defrecord(:wxCommand, Record.extract(:wxCommand, from_lib: "wx/include/wx.hrl"))
-  Record.defrecord(:wx_env, Record.extract(:wx_env, from_lib: "wx/src/wxe.hrl"))
 
   @impl true
   def init(opts) when is_list(opts) do
@@ -48,6 +42,7 @@ defmodule Windex.VNC do
   defp spawn_program!(nil, _, _), do: {:ok, nil}
 
   defp spawn_program!(:observer, _, display) do
+    # TODO
     nodename = "#{observer_name()}@127.0.0.1"
     cmd = "erl -name #{nodename} -hidden -setcookie #{Node.get_cookie()} -run observer -noinput -env DISPLAY #{display}"
     Logger.info "Starting erlang observer"
@@ -71,19 +66,6 @@ defmodule Windex.VNC do
     {:ok, pid, _} = :exec.run_link("Xvfb -displayfd 1", [{:stdout, self()}, {:stderr, self()}, :monitor])
     Process.monitor(pid)
   end
-
-  def select_observer_node(node) do
-    env = wx_env(sv: Process.whereis(:observer), port: :observer_wx.get_attrib(:opengl_port))
-    :wx.set_env(env)
-    menu_idx = :wxMenuBar.findMenu(:observer_wx.get_menubar, "Nodes")
-    Logger.debug(menu_idx)
-    label_id = :wxMenuBar.getMenu(:observer_wx.get_menubar, menu_idx)
-      |> :wxMenu.getMenuItems
-      |> Enum.find(fn item -> IO.inspect(:wxMenuItem.getLabel(item)) |> List.to_atom == node end)
-      |> :wxMenuItem.getId
-    send(:observer, wx(id: label_id, event: wxCommand(type: :command_menu_selected)))
-  end
-
 
   def start_link(opts) when is_list(opts) do
     GenServer.start_link(__MODULE__, opts)
