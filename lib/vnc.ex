@@ -55,12 +55,30 @@ defmodule Windex.VNC do
     #
     # env = wx_env(sv: Process.whereis(:observer), port: :observer_wx.get_attrib(:opengl_port))
     # :wx.set_env(env)
-    # :wxMenuBar.findMenu(:observer_wx.get_menubar, "Nodes")
-    # TODO...
+    # menu_idx = :wxMenuBar.findMenu(:observer_wx.get_menubar, "Nodes")
+    # menu = :wxMenuBar.getMenu(:observer_wx.get_menubar, menu_idx)
+    # 
+    # Windex.VNC.wx(id: 10001, event: Windex.VNC.wxCommand(type: :command_menu_selected))
     cmd = "erl -name #{observer_name()}@127.0.0.1 -hidden -setcookie #{Node.get_cookie()} -run observer -noinput -env DISPLAY #{display}"
     Logger.info "Starting erlang observer"
     {:ok, pid, _} = :exec.run_link(cmd, [{:stdout, self()}, {:stderr, self()}, :monitor])
     Process.monitor(pid)
+  end
+
+  def select_observer_node(node) do
+    Node.connect(node)
+    #TODO
+    Node.spawn(node, fn ->
+      env = wx_env(sv: Process.whereis(:observer), port: :observer_wx.get_attrib(:opengl_port))
+      :wx.set_env(env)
+      menu_idx = :wxMenuBar.findMenu(:observer_wx.get_menubar, "Nodes")
+      Logger.debug(menu_idx)
+      label_id = :wxMenuBar.getMenu(:observer_wx.get_menubar, menu_idx)
+        |> :wxMenu.getMenuItems
+        |> Enum.find(fn item -> IO.inspect(:wxMenuItem.getLabel(item)) |> List.to_atom == node end)
+        |> :wxMenuItem.getId
+      send(:observer, wx(id: label_id, event: wxCommand(type: :command_menu_selected)))
+    end)
   end
 
   defp spawn_program!(program, args, display) do
