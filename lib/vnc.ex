@@ -1,5 +1,5 @@
 defmodule Windex.VNC do
-  use GenServer, restart: :transient
+  use GenServer, restart: :temporary
   alias Application, as: App
 
   require GenServer
@@ -87,12 +87,14 @@ defmodule Windex.VNC do
   end
 
   @impl true
-  def handle_info({:stderr, _, _out}, state) do
+  def handle_info({:stderr, _, out}, state) do
+    Logger.debug("STDERR\t#{inspect out}")
     {:noreply, state}
   end
 
   @impl true
-  def handle_info({:stdout, _, _out}, state) do
+  def handle_info({:stdout, _, out}, state) do
+    Logger.debug("STDOUT\t#{inspect out}")
     {:noreply, state}
   end
 
@@ -108,7 +110,7 @@ defmodule Windex.VNC do
     {tmpfile, 0} = System.cmd("mktemp", ["windex.XXXXXXXXXX", "--tmpdir"])
     tmpfile = tmpfile |> String.trim
     File.write!(tmpfile, "#{viewonly? and password() or password}\n")
-    cmd = "x11vnc -norc -display #{display} -rfbport #{port} -passwdfile rm:#{tmpfile}" |> String.to_charlist
+    cmd = "x11vnc -timeout 10 -norc -display #{display} -rfbport #{port} -passwdfile rm:#{tmpfile}" |> String.to_charlist
     Logger.debug cmd
 
     case viewonly?  do

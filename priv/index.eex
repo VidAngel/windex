@@ -1,8 +1,11 @@
 <!doctype html>
+<%= IO.inspect "hey" %>
 <title><%= Node.self() %> | WINDEX</title>
 <form method=POST>
+  <input type=hidden name=nonce value=<%= nonce %>>
   <select name=command>
-    <%=Windex.available_opts |> Enum.with_index |> Enum.map(fn({opt, idx}) -> %>
+    <%=commands |> Enum.with_index |> Enum.map(fn({opt, idx}) -> %>
     <option value=<%=idx%>><%= opt[:run] %></option>
     <% end) %>
+  </select>
   <input type=submit>
