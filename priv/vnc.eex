@@ -1,2 +1,8 @@
 <!DOCTYPE html>
-<script src="/novnc/rfb.js">
+<div id=vnc></div>
+<script src="./novnc/rfb.js"></script>
+<script>
+  const protocol = window.location.protocol.indexOf('https') !== -1 ? 'wss' : 'ws';
+  const rfb = new RFB(document.getElementById('vnc'), `${protocol}:<%= port %>`);
+  console.log(rfb);
+</script>
