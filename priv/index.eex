@@ -1,5 +1,4 @@
 <!doctype html>
-<%= IO.inspect "hey" %>
 <title><%= Node.self() %> | WINDEX</title>
 <form method=POST>
   <input type=hidden name=nonce value=<%= nonce %>>

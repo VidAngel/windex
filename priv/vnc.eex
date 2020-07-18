@@ -1,8 +1,14 @@
 <!DOCTYPE html>
 <div id=vnc></div>
-<script src="./novnc/rfb.js"></script>
-<script>
+<script type="module">
+  import RFB from "./novnc/novnc/rfb.js";
   const protocol = window.location.protocol.indexOf('https') !== -1 ? 'wss' : 'ws';
-  const rfb = new RFB(document.getElementById('vnc'), `${protocol}:<%= port %>`);
-  console.log(rfb);
+  const el = document.getElementById('vnc');
+  const wsurl = `${protocol}://${window.location.hostname}:<%= port %>`;
+  const rfb = new RFB(el, wsurl, {credentials: {password: "<%= password %>"}});
+  rfb.addEventListener('connect', function() {
+    console.log('hallelujah');
+    console.log(rfb.capabilities);
+    console.log(rfb.machineShutdown());
+  });
 </script>

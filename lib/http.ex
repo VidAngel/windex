@@ -6,7 +6,7 @@ defmodule Windex.HTTP do
     case httpd(req, :method) do
       'GET' -> do_get(req)
       'POST' -> do_post(req)
-      _ -> {:proceed, response: {405, :httpd_util.reason_phrase(405)}}
+      _ -> {:break, response: {405, :httpd_util.reason_phrase(405)}}
     end
   end
 
@@ -15,13 +15,13 @@ defmodule Windex.HTTP do
     command_index = form['command'] |> List.to_integer
     command = Windex.available_opts |> Enum.at(command_index)
     {port, password} = Windex.spawn_server(command)
-    {:proceed, response: {200, Windex.HTTP.Template.vnc(port, password) |> String.to_charlist}}
+    {:break, response: {200, Windex.HTTP.Template.vnc(port, password) |> String.to_charlist}}
   end
 
   defp do_get(req) do
     cond do
-      is_root(httpd(req, :request_uri)) -> {:proceed, response: {200, Windex.HTTP.Template.index()}}
-      true -> {:proceed, response: {404, ''}}
+      is_root(httpd(req, :request_uri)) -> {:break, response: {200, Windex.HTTP.Template.index()}}
+      true -> {:proceed, httpd(req, :data)}
     end
   end
 
@@ -40,7 +40,7 @@ defmodule Windex.HTTP do
       bind_address: Application.get_env(:windex, :http_bind_address, Mix.env() == :prod && '0.0.0.0' || '127.0.0.1'),
       port: Application.get_env(:windex, :http_port, 0),
       modules: [:mod_get, __MODULE__],
-      mime_types: [{'js', 'application/javascript'}],
+      mime_types: [{'html','text/html'},{'htm','text/html'}, {'js', 'application/javascript'}],
     ]]
     %{id: __MODULE__,
       start: {:inets, :start, args},
