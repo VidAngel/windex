@@ -4,7 +4,7 @@
   <input type=hidden name=nonce value=<%= nonce %>>
   <select name=command>
     <%=commands |> Enum.with_index |> Enum.map(fn({opt, idx}) -> %>
-    <option value=<%=idx%>><%= opt[:run] %></option>
+    <option value=<%=idx%>><%= inspect(opt) %></option>
     <% end) %>
   </select>
   <input type=submit>

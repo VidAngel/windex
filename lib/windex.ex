@@ -7,7 +7,9 @@ defmodule Windex do
   def available_opts do
     [
       [run: "xterm"],
-      [run: :observer]
+      [run: :observer],
+      [display: ":1"],
+      [display: ":1", viewonly: true],
     ]
   end
 end

@@ -30,7 +30,10 @@ defmodule Windex.VNC do
     end
   end
 
-  defp decorate!(_preexisting_server, true), do: nil
+  defp decorate!(_preexisting_server, true) do
+    Logger.debug "Pre-existing server, not decorating"
+    nil
+  end
   defp decorate!(xserver, _) do
     spawn(fn ->
       Process.sleep(1000)
@@ -39,7 +42,10 @@ defmodule Windex.VNC do
     end)
   end
 
-  defp spawn_program!(nil, _, _), do: {:ok, nil}
+  defp spawn_program!(nil, _, _) do
+    Logger.debug "No requested application"
+    {:ok, nil}
+  end
 
   defp spawn_program!(:observer, _, display) do
     nodename = "#{observer_name()}@127.0.0.1"
@@ -60,7 +66,7 @@ defmodule Windex.VNC do
   defp observer_name(), do: "windex-#{password()}"
 
   # assume it's an already running xserver
-  defp spawn_xserver!(xserver) when is_bitstring(xserver), do: {:ok, send(self(), {:stdout, nil, xserver})}
+  defp spawn_xserver!(xserver) when is_bitstring(xserver), do: {:ok, send(self(), {:stdout, nil, Regex.replace(~r/^:/,xserver,"")})}
   defp spawn_xserver!(nil) do
     {:ok, pid, _} = :exec.run_link("Xvfb -displayfd 1", [{:stdout, self()}, {:stderr, self()}, :monitor])
     Process.monitor(pid)
@@ -109,7 +115,7 @@ defmodule Windex.VNC do
     # https://linux.die.net/man/1/x11vnc
     {tmpfile, 0} = System.cmd("mktemp", ["windex.XXXXXXXXXX", "--tmpdir"])
     tmpfile = tmpfile |> String.trim
-    File.write!(tmpfile, "#{viewonly? and password() or password}\n")
+    File.write!(tmpfile, "#{viewonly? && password() || password}\n")
     cmd = "x11vnc -timeout 10 -norc -display #{display} -rfbport #{port} -passwdfile rm:#{tmpfile}" |> String.to_charlist
     Logger.debug cmd
 

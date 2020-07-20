@@ -7,8 +7,5 @@
   const wsurl = `${protocol}://${window.location.hostname}:<%= port %>`;
   const rfb = new RFB(el, wsurl, {credentials: {password: "<%= password %>"}});
   rfb.addEventListener('connect', function() {
-    console.log('hallelujah');
-    console.log(rfb.capabilities);
-    console.log(rfb.machineShutdown());
   });
 </script>
