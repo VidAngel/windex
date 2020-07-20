@@ -23,6 +23,7 @@ defmodule Windex.MixProject do
   defp deps do
     [
       {:erlexec, "~> 1.17.0"},
+      {:jason, "~> 1.2"},
     ]
   end
 end

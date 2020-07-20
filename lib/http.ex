@@ -19,13 +19,16 @@ defmodule Windex.HTTP do
   end
 
   defp do_get(req) do
+    uri = httpd(req, :request_uri)
     cond do
-      is_root(httpd(req, :request_uri)) -> {:break, response: {200, Windex.HTTP.Template.index()}}
+      '/index.json' == uri -> {:break, response: Windex.HTTP.Template.index(:json)}
+      is_root(uri) -> {:break, response: Windex.HTTP.Template.index(:html)}
       true -> {:proceed, httpd(req, :data)}
     end
   end
 
   defp is_root('/'), do: true
+  defp is_root('/index'), do: true
   defp is_root('/index.html'), do: true
   defp is_root(_), do: false
 
@@ -51,10 +54,27 @@ end
 defmodule Windex.HTTP.Template do
   require EEx
 
-  def index() do
+  def index(:json) do
+    {nonce, commands} = index()
+    index(nonce, commands) |> String.to_charlist
+    json = Jason.encode!(%{nonce: nonce, commands: Enum.map(commands, &inspect/1)})
+    {:response, [code: 200, content_type: 'application/json', content_length: "#{byte_size(json)}" |> String.to_charlist], json |> String.to_charlist}
+  end
+
+  def index(:html) do
+    {nonce, commands} = index()
+    {200, index(nonce, commands) |> String.to_charlist}
+  end
+
+  defp index() do
     nonce = Windex.HTTP.nonce()
     commands = Windex.available_opts()
-    index(nonce, commands) |> String.to_charlist
+    Task.start(fn ->
+      Registry.register(Windex.OptionSets, nonce, commands)
+      Process.sleep(1_000*60*15)
+      Registry.unregister(Windex.OptionSets, nonce)
+    end)
+    {nonce, commands}
   end
   
   EEx.function_from_file(:defp, :index, "#{:code.priv_dir(:windex)}/index.eex", [:nonce, :commands])

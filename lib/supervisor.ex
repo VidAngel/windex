@@ -6,7 +6,8 @@ defmodule Windex.Supervisor do
   def init(_) do
     children = [
       {DynamicSupervisor, name: Windex.Sessions, strategy: :one_for_one},
-      Windex.HTTP
+      Windex.HTTP,
+      {Registry, keys: :unique, name: Windex.OptionSets},
     ]
     Supervisor.init(children, strategy: :one_for_one)
   end
