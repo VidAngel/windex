@@ -20,8 +20,11 @@ defmodule Windex.HTTP do
     case httpd(req, :request_uri) do
       '/run.json' ->
           json = Jason.encode!(%{port: port, password: password})
-          response = [code: 200, content_type: 'application/json', content_length: "#{byte_size(json)}" |> String.to_charlist]
-          {:break, response: {response, json |> String.to_charlist}}
+          response = {:response, [
+            code: 200, content_type: 'application/json',
+            content_length: "#{byte_size(json)}" |> String.to_charlist],
+            json |> String.to_charlist}
+          {:break, response: response}
       _ -> {:break, response: {200, Windex.HTTP.Template.vnc(port, password) |> String.to_charlist}}
     end
   end
@@ -65,9 +68,7 @@ defmodule Windex.HTTP do
   end
 
   def validate!(id) do
-    IO.inspect(id)
     [term, creation, hmac] = "#{id}" |> String.split(".")
-    IO.inspect(term)
     now = DateTime.utc_now |> DateTime.to_unix
     creation = creation |> String.to_integer
     true = (now - creation) < @command_ttl
