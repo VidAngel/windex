@@ -1,10 +1,9 @@
 <!doctype html>
 <title><%= Node.self() %> | WINDEX</title>
 <form method=POST>
-  <input type=hidden name=nonce value=<%= nonce %>>
-  <select name=command>
-    <%=commands |> Enum.with_index |> Enum.map(fn({opt, idx}) -> %>
-    <option value=<%=idx%>><%= inspect(opt) %></option>
+  <select name=id>
+    <%=commands |> Enum.map(fn(opt) -> %>
+    <option value="<%=opt[:id]%>"><%= opt[:label] %></option>
     <% end) %>
   </select>
   <input type=submit>
