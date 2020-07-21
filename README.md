@@ -1,25 +1,15 @@
 # Windex
 
-**TODO: Add description**
+Elixir (and optional HTTP) API for ad hoc VNC servers.
+Useful for viewing observer on a remote machine and
+monitoring other GUI processes managed by Erlang/Elixir.
 
 ## Installation
 
+### Requirements
+
+- X Server
+- Xvfb
+- (optional) xorg-twm
+
 Make sure you have the latest version of rebar (`mix local.rebar`).
-
-It's recommended that xorg-twm is installed for window management.
-
-If [available in Hex](https://hex.pm/docs/publish), the package can be installed
-by adding `windex` to your list of dependencies in `mix.exs`:
-
-```elixir
-def deps do
-  [
-    {:windex, "~> 0.1.0"}
-  ]
-end
-```
-
-Documentation can be generated with [ExDoc](https://github.com/elixir-lang/ex_doc)
-and published on [HexDocs](https://hexdocs.pm). Once published, the docs can
-be found at [https://hexdocs.pm/windex](https://hexdocs.pm/windex).
-
