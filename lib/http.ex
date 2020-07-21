@@ -89,9 +89,9 @@ defmodule Windex.HTTP.Template do
   end
 
   defp commands() do
-    IO.inspect(Windex.available_opts() |> Enum.map(fn cmd ->
+    Windex.get_commands() |> Enum.map(fn cmd ->
       %{label: inspect(cmd), id: Windex.HTTP.command_id(cmd)}
-    end))
+    end)
   end
   
   EEx.function_from_file(:def, :index, "#{:code.priv_dir(:windex)}/index.eex", [:commands])

@@ -4,12 +4,15 @@ defmodule Windex do
     {GenServer.call(pid, :get_port), GenServer.call(pid, :get_password)}
   end
 
-  def available_opts do
+  def get_commands do
+    mod = Application.get_env(:windex, :command_module, __MODULE__)
+    apply(mod, :commands, [])
+  end
+
+  def commands do
     [
-      [run: "xterm"],
       [run: :observer],
-      [display: ":1"],
-      [display: ":1", viewonly: true],
+      [run: :xterm]
     ]
   end
 end
