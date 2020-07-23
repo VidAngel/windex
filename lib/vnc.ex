@@ -116,7 +116,8 @@ defmodule Windex.VNC do
     {tmpfile, 0} = System.cmd("mktemp", ["windex.XXXXXXXXXX", "--tmpdir"])
     tmpfile = tmpfile |> String.trim
     File.write!(tmpfile, "#{viewonly? && password() || password}\n")
-    cmd = "x11vnc -timeout 10 -norc -display #{display} -rfbport #{port} -passwdfile rm:#{tmpfile}" |> String.to_charlist
+    timeout = Application.get_env(:windex, :command_ttl_seconds, 10)
+    cmd = "x11vnc -timeout #{timeout} -norc -display #{display} -rfbport #{port} -passwdfile rm:#{tmpfile}" |> String.to_charlist
     Logger.debug cmd
 
     case viewonly?  do
