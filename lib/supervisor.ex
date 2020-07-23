@@ -4,11 +4,10 @@ defmodule Windex.Supervisor do
   require Logger
 
   def init(_) do
-    children = [
-      {DynamicSupervisor, name: Windex.Sessions, strategy: :one_for_one},
-      Windex.HTTP
-    ]
-    Supervisor.init(children, strategy: :one_for_one)
+    children = [{DynamicSupervisor, name: Windex.Sessions, strategy: :one_for_one}]
+    http? = Application.get_env(:windex, :http_enabled, true)
+    if http?, do: Supervisor.init(children ++ [Windex.HTTP], strategy: :one_for_one),
+    else: Supervisor.init(children, strategy: :one_for_one)
   end
 
   def start(_, _) do
