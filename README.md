@@ -19,7 +19,7 @@ Add the Windex dependency to your mix.exs file
 ```elixir
 defp deps do
   [
-    {:windex, git: "git@github.com:VidAngel/windex.git", tag: "0.2.1"},
+    {:windex, git: "git@github.com:VidAngel/windex.git", tag: "0.3.0"},
   ]
 end
 ```
