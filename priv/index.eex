@@ -1,9 +1,0 @@
-<!doctype html>
-<title><%= Node.self() %> | WINDEX</title>
-<form method=POST>
-  <select name=id>
-    <%=commands |> Enum.map(fn(opt) -> %>
-    <option value="<%=opt[:id]%>"><%= opt[:label] %></option>
-    <% end) %>
-  </select>
-  <input type=submit>

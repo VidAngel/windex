@@ -9,13 +9,3 @@ defmodule Windex do
     apply(mod, :commands, [])
   end
 end
-
-defmodule Windex.CommandList do
-  defmacro __using__(_opts) do
-    quote do
-      def commands, do: [ [run: :observer], [run: "xterm"], ]
-      defoverridable commands: 0
-    end
-  end
-end
-defmodule Windex.CommandList.Default, do: use Windex.CommandList
