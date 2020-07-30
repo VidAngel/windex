@@ -45,6 +45,9 @@ Options:
 # start observer
 {port, password} = Windex.spawn_server
 
+# start observer for separate node (note that the run: value is an atom when spawning the observer!)
+{port, password} = Windex.spawn_server(run: :observer, args: ["nodename@nodehost", "cookie"])
+
 # Start xeyes on an existing X server
 {port, password} = Windex.spawn_server([run: "xeyes", display: ":0"])
 

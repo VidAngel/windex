@@ -9,7 +9,7 @@ defmodule Windex.VNC do
   def init(opts) when is_list(opts) do
     port      = Keyword.get(opts, :port, available_port())
     program   = Keyword.get(opts, :run)
-    args      = Keyword.get(opts, :args, [])
+    args      = Keyword.get(opts, :args, (if program == :observer, do: [Node.self(), Node.get_cookie()], else: []))
     xserver   = Keyword.get(opts, :display)
     viewonly? = Keyword.get(opts, :viewonly, false)
     password  = password(Keyword.get(opts, :password))
@@ -47,10 +47,10 @@ defmodule Windex.VNC do
     {:ok, nil}
   end
 
-  defp spawn_program!(:observer, _, display) do
+  defp spawn_program!(:observer, [node, cookie], display) do
     nodename = "#{observer_name()}@127.0.0.1"
     observer_script = "#{:code.priv_dir(:windex)}/observer.exs"
-    cmd = "elixir --name #{nodename} --hidden --cookie #{Node.get_cookie()} --erl \"-noinput -env DISPLAY #{display}\" #{observer_script} #{Node.self()}"
+    cmd = "elixir --name #{nodename} --hidden --cookie #{cookie} --erl \"-noinput -env DISPLAY #{display}\" #{observer_script} #{node}"
     Logger.info "Starting erlang observer"
     {:ok, pid, _} = :exec.run_link(cmd, [{:stdout, self()}, {:stderr, self()}, :monitor])
     Process.monitor(pid)
@@ -116,7 +116,7 @@ defmodule Windex.VNC do
     {tmpfile, 0} = System.cmd("mktemp", ["windex.XXXXXXXXXX", "--tmpdir"])
     tmpfile = tmpfile |> String.trim
     File.write!(tmpfile, "#{viewonly? && password() || password}\n")
-    timeout = Application.get_env(:windex, :command_ttl_seconds, 10)
+    timeout = Application.get_env(:windex, :connection_timeout_seconds, 10)
     cmd = "x11vnc -timeout #{timeout} -norc -display #{display} -rfbport #{port} -passwdfile rm:#{tmpfile}" |> String.to_charlist
     Logger.debug cmd
 
