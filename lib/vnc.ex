@@ -17,6 +17,7 @@ defmodule Windex.VNC do
     Logger.debug("PID -> #{inspect self()}")
 
     spawn_xserver!(xserver)
+
     receive do
       {:stdout, _, x}  ->
         display = ":" <> String.trim(x)
@@ -50,7 +51,7 @@ defmodule Windex.VNC do
   defp spawn_program!(:observer, [node, cookie], display) do
     nodename = "#{observer_name()}@127.0.0.1"
     observer_script = "#{:code.priv_dir(:windex)}/observer.exs"
-    cmd = "elixir --name #{nodename} --hidden --cookie #{cookie} --erl \"-noinput -env DISPLAY #{display}\" #{observer_script} #{node}"
+    cmd = "#{elixir_bin()} #{boot_vars()} --boot #{boot_file()} --name #{nodename} --hidden --cookie #{cookie} --erl \"-noinput -env DISPLAY #{display}\" #{observer_script} #{node}"
     Logger.info "Starting erlang observer"
     {:ok, pid, _} = :exec.run_link(cmd, [{:stdout, self()}, {:stderr, self()}, :monitor])
     Process.monitor(pid)
@@ -62,6 +63,26 @@ defmodule Windex.VNC do
     {:ok, pid, _} = :exec.run_link(cmd, [{:env, [{"DISPLAY", display}]}, {:stdout, self()}, {:stderr, self()}, :monitor])
     Process.monitor(pid)
   end
+
+  defp elixir_bin,      do: elixir_bin(release_dir())
+  defp elixir_bin(nil), do: "elixir"
+  defp elixir_bin(path),do: path <> "/elixir"
+  defp boot_file,       do: boot_file(release_dir())
+  defp boot_file(nil),  do: "$ROOT/start"
+  defp boot_file(dir),  do: dir <> "/start_clean"
+  defp release_version, do: System.get_env("RELEASE_VSN", nil)
+  defp release_root,    do: System.get_env("RELEASE_ROOT", nil)
+  defp release_dir,     do: release_dir(release_root(), release_version())
+  defp release_dir(root, vsn) when is_bitstring(root) and is_bitstring(vsn), do: (root <> "/releases/") <> vsn
+  defp release_dir(_, _), do: nil
+  defp boot_vars do
+    if release_root() do
+      "--boot-var RELEASE_LIB \"#{release_root()}\"/lib"
+    else
+      ""
+    end
+  end
+
 
   defp observer_name(), do: "windex-#{password()}"
 
