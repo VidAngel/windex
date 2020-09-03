@@ -7,15 +7,22 @@ defmodule Windex.MixProject do
       version: "0.3.1",
       elixir: "~> 1.10",
       start_permanent: Mix.env() == :prod,
-      deps: deps()
+      deps: deps(),
+      aliases: [
+        compile: ["compile", &compile_observer/1]
+      ],
     ]
+  end
+
+  defp compile_observer(_) do
+    :elixir_compiler.file_to_path("#{:code.priv_dir(:windex)}/observer.ex", "#{:code.priv_dir(:windex)}", fn _, _ -> nil end)
   end
 
   # Run "mix help compile.app" to learn about applications.
   def application do
     [
       mod: {Windex.Supervisor, []},
-      extra_applications: [:logger, :erlexec, :inets]
+      extra_applications: [:logger, :erlexec, :inets, :runtime_tools, :observer, :wx, :crypto]
     ]
   end
 
@@ -26,4 +33,5 @@ defmodule Windex.MixProject do
       {:jason, "~> 1.2"},
     ]
   end
+
 end

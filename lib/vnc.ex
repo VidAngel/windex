@@ -50,8 +50,9 @@ defmodule Windex.VNC do
 
   defp spawn_program!(:observer, [node, cookie], display) do
     nodename = "#{observer_name()}@127.0.0.1"
-    observer_script = "#{:code.priv_dir(:windex)}/observer.exs"
-    cmd = "#{elixir_bin()} #{boot_vars()} --boot #{boot_file()} --name #{nodename} --hidden --cookie #{cookie} --erl \"-noinput -env DISPLAY #{display}\" #{observer_script} #{node}"
+    observer_path = "#{:code.priv_dir(:windex)}"
+    cmd = "#{elixir_bin()} #{boot_vars()} -pa #{observer_path} --boot #{boot_file()} --name #{nodename} --hidden --cookie #{cookie} --erl \"-noinput -env DISPLAY #{display}\" -e \"Windex.Observer.run(:\\\"#{node}\\\")\""
+    Logger.debug cmd
     Logger.info "Starting erlang observer"
     {:ok, pid, _} = :exec.run_link(cmd, [{:stdout, self()}, {:stderr, self()}, :monitor])
     Process.monitor(pid)

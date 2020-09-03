@@ -22,6 +22,3 @@ defmodule Windex.Observer do
   end
   def loop, do: loop()
 end
-
-[node | _ ] = System.argv
-Windex.Observer.run(node)
