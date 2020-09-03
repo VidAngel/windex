@@ -29,7 +29,7 @@ defmodule Windex.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:erlexec, "~> 1.17.0"}
+      {:erlexec, "~> 1.17.5"}
     ]
   end
 
