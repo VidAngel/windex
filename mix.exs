@@ -22,7 +22,7 @@ defmodule Windex.MixProject do
   def application do
     [
       mod: {Windex.Supervisor, []},
-      extra_applications: [:logger, :erlexec, :inets, :runtime_tools, :observer, :wx, :crypto]
+      extra_applications: [:logger, :erlexec, :inets, :crypto, :wx, :observer, :runtime_tools],
     ]
   end
 
