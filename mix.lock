@@ -1,4 +1,5 @@
 %{
   "erlexec": {:hex, :erlexec, "1.17.5", "b8944a839669a9397d3515e23af89ccd43ff9693128a28738d79233f7bc5414e", [:rebar3], [], "hexpm", "ba22dcccc914ef19eca1002dc165c584145c74cf577c9d754e6d4ac8d38102ff"},
   "jason": {:hex, :jason, "1.2.1", "12b22825e22f468c02eb3e4b9985f3d0cb8dc40b9bd704730efa11abd2708c44", [:mix], [{:decimal, "~> 1.0", [hex: :decimal, repo: "hexpm", optional: true]}], "hexpm", "b659b8571deedf60f79c5a608e15414085fa141344e2716fbd6988a084b5f993"},
+  "pc": {:hex, :pc, "1.11.0", "b89b511d29901425908a3502c34639e9c20d70b3decbb15b185dd265013fdab2", [:rebar3], [], "hexpm", "ac60b7286c19ce676b0d85debb77c7ced974efda0dec0566c87c46c522910068"},
 }
